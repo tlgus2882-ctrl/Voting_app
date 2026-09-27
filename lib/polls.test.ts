@@ -137,3 +137,51 @@ describe("castVote", () => {
     expect(await castVote(db, 999, 1, "voter-a")).toBe("poll-not-found");
   });
 });
+
+describe("Result", () => {
+  it("is hidden from a Voter who has not voted", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-b");
+
+    expect(await getPoll(db, pollId, voter)).not.toHaveProperty("result");
+  });
+
+  it("is shown to a Voter after they vote, with counts, percentages and total", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕", "볶음밥"]);
+    const [jjajang, jjamppong] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-a");
+    await castVote(db, pollId, jjajang.id, "voter-b");
+    await castVote(db, pollId, jjamppong.id, "voter-c");
+
+    const poll = await getPoll(db, pollId, voter);
+
+    expect(poll?.result).toEqual({
+      totalVotes: 3,
+      options: [
+        { optionId: jjajang.id, text: "짜장", votes: 2, percent: 67 },
+        { optionId: jjamppong.id, text: "짬뽕", votes: 1, percent: 33 },
+        { optionId: expect.any(Number), text: "볶음밥", votes: 0, percent: 0 },
+      ],
+    });
+  });
+
+  it("is shown to the Operator without voting", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-b");
+
+    const poll = await getPoll(db, pollId, { voterId: null, isOperator: true });
+
+    expect(poll?.result?.totalVotes).toBe(1);
+  });
+
+  it("shows 0% for every Option when there are no Votes", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+
+    const poll = await getPoll(db, pollId, { voterId: null, isOperator: true });
+
+    expect(poll?.result?.totalVotes).toBe(0);
+    expect(poll?.result?.options.map((o) => o.percent)).toEqual([0, 0]);
+  });
+});

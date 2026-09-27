@@ -3,6 +3,7 @@ import { getDb } from "@/lib/neon-db";
 import { isOperator } from "@/lib/operator-session";
 import { getPoll } from "@/lib/polls";
 import { readVoterId } from "@/lib/voter";
+import { ResultView } from "./result-view";
 import { VoteForm } from "./vote-form";
 
 export default async function PollPage({ params }: PageProps<"/polls/[id]">) {
@@ -18,11 +19,8 @@ export default async function PollPage({ params }: PageProps<"/polls/[id]">) {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold">{poll.question}</h1>
-      {poll.myOptionId === null ? (
-        <VoteForm pollId={poll.id} options={poll.options} />
-      ) : (
-        <p className="text-zinc-600 dark:text-zinc-400">투표 완료</p>
-      )}
+      {poll.result && <ResultView result={poll.result} myOptionId={poll.myOptionId} />}
+      {poll.myOptionId === null && <VoteForm pollId={poll.id} options={poll.options} />}
     </div>
   );
 }

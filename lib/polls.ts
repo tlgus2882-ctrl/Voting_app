@@ -96,15 +96,34 @@ export async function createPoll(
 
 export type PollOption = { id: number; text: string };
 
+export type OptionTally = {
+  optionId: number;
+  text: string;
+  votes: number;
+  /** Whole-number share of all Votes; 0 when there are none. */
+  percent: number;
+};
+
+export type PollResult = {
+  totalVotes: number;
+  /** In the order the Options were entered. */
+  options: OptionTally[];
+};
+
 export type PollView = {
   id: number;
   question: string;
   options: PollOption[];
   /** The Option this Voter chose, or null if they haven't voted. */
   myOptionId: number | null;
+  /** Present only if the viewer has voted in this Poll or is the Operator. */
+  result?: PollResult;
 };
 
-/** One Poll as seen by `viewer`, or null if it doesn't exist. */
+/**
+ * One Poll as seen by `viewer`, or null if it doesn't exist. The Result is
+ * left out entirely unless the viewer may see it.
+ */
 export async function getPoll(
   db: Db,
   pollId: number,
@@ -119,16 +138,25 @@ export async function getPoll(
   );
   if (!poll) return null;
 
-  const options = await db.query<PollOption>(
-    `SELECT id, text FROM options WHERE poll_id = $1 ORDER BY position`,
+  const rows = await db.query<{ id: number; text: string; votes: number }>(
+    `SELECT o.id, o.text, count(v.voter_id)::int AS votes
+       FROM options o
+       LEFT JOIN votes v ON v.option_id = o.id
+      WHERE o.poll_id = $1
+      GROUP BY o.id
+      ORDER BY o.position`,
     [pollId],
   );
-  return {
+  const view: PollView = {
     id: poll.id,
     question: poll.question,
-    options,
+    options: rows.map(({ id, text }) => ({ id, text })),
     myOptionId: poll.my_option_id,
   };
+  if (poll.my_option_id !== null || viewer.isOperator) {
+    view.result = tally(rows);
+  }
+  return view;
 }
 
 export type CastVoteResult =
@@ -164,4 +192,17 @@ export async function castVote(
   if (!why.poll_exists) return "poll-not-found";
   if (!why.option_in_poll) return "option-not-in-poll";
   return "already-voted";
+}
+
+function tally(rows: { id: number; text: string; votes: number }[]): PollResult {
+  const totalVotes = rows.reduce((sum, r) => sum + r.votes, 0);
+  return {
+    totalVotes,
+    options: rows.map((r) => ({
+      optionId: r.id,
+      text: r.text,
+      votes: r.votes,
+      percent: totalVotes === 0 ? 0 : Math.round((r.votes * 100) / totalVotes),
+    })),
+  };
 }
