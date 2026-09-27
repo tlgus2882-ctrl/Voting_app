@@ -17,7 +17,8 @@ export async function castVoteAction(
     return { error: "선택지를 하나 골라 주세요." };
   }
 
-  const result = await castVote(getDb(), { pollId, optionId, voterId: await ensureVoterId() }, new Date());
+  const voterId = await ensureVoterId();
+  const result = await castVote(getDb(), { pollId, optionId, voterId }, new Date());
   switch (result) {
     case "ok":
     case "already-voted":

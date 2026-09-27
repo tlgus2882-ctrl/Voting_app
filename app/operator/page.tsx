@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/neon-db";
 import { isOperator } from "@/lib/operator-session";
 import { listPolls } from "@/lib/polls";
-import { readVoterId } from "@/lib/voter";
+import { readViewer } from "@/lib/viewer";
 import { signOut } from "./actions";
 import { CreatePollForm } from "./create-poll-form";
 import { DeletePollButton } from "./delete-poll-button";
@@ -11,10 +11,7 @@ import { DeletePollButton } from "./delete-poll-button";
 export default async function OperatorPage() {
   if (!(await isOperator())) redirect("/operator/login");
 
-  const polls = await listPolls(getDb(), {
-    voterId: await readVoterId(),
-    isOperator: true,
-  }, new Date());
+  const polls = await listPolls(getDb(), await readViewer(), new Date());
 
   return (
     <div className="flex flex-col gap-8">

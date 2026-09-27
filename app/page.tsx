@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { getDb } from "@/lib/neon-db";
 import { listPolls, type PollSummary } from "@/lib/polls";
-import { readVoterId } from "@/lib/voter";
+import { readViewer } from "@/lib/viewer";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const { notice } = await searchParams;
-  const polls = await listPolls(getDb(), {
-    voterId: await readVoterId(),
-    isOperator: false,
-  }, new Date());
+  const polls = await listPolls(getDb(), await readViewer(), new Date());
 
   return (
     <div className="flex flex-col gap-4">
