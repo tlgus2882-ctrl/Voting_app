@@ -39,6 +39,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
         </header>
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">{children}</main>
+        <footer className="border-t border-zinc-200 dark:border-zinc-800">
+          <p className="mx-auto max-w-2xl px-4 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            제작: 박시현
+          </p>
+        </footer>
       </body>
     </html>
   );

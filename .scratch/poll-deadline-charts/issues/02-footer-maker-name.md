@@ -9,8 +9,8 @@ Spec: `.scratch/poll-deadline-charts/spec.md`
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 모든 페이지 하단에 "제작: 박시현"이 보인다
-- [ ] 내용이 짧은 페이지(빈 목록, 404)에서도 푸터가 화면 아래쪽에 자연스럽게 놓인다
-- [ ] 라이트·다크 모드 모두에서 읽힌다
+- [x] 모든 페이지 하단에 "제작: 박시현"이 보인다
+- [x] 내용이 짧은 페이지(빈 목록, 404)에서도 푸터가 화면 아래쪽에 자연스럽게 놓인다
+- [x] 라이트·다크 모드 모두에서 읽힌다
