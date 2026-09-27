@@ -338,3 +338,41 @@ describe("Deadline", () => {
     expect((await getPoll(db, pollId, voter, later(HOUR)))?.result?.totalVotes).toBe(1);
   });
 });
+
+describe("Chart Type", () => {
+  it("defaults to horizontal-bar", async () => {
+    const pollId = await postPoll("Q?", ["a", "b"]);
+
+    expect((await getPoll(db, pollId, voter, now))?.chartType).toBe("horizontal-bar");
+  });
+
+  it("keeps the Chart Type the Operator chose", async () => {
+    const result = await createPoll(
+      db,
+      { question: "Q?", options: ["a", "b"], chartType: "vertical-bar" },
+      now,
+    );
+    if (!result.ok) throw new Error(result.error);
+
+    expect((await getPoll(db, result.pollId, voter, now))?.chartType).toBe("vertical-bar");
+  });
+
+  it("rejects an unknown Chart Type", async () => {
+    expect(
+      await createPoll(db, { question: "Q?", options: ["a", "b"], chartType: "pie" }, now),
+    ).toEqual({ ok: false, error: "invalid-chart-type" });
+    expect(await listPolls(db, voter, now)).toEqual([]);
+  });
+
+  it("allows 10 Options with a bar chart", async () => {
+    const ten = Array.from({ length: 10 }, (_, i) => `o${i}`);
+
+    const result = await createPoll(
+      db,
+      { question: "Q?", options: ten, chartType: "vertical-bar" },
+      now,
+    );
+
+    expect(result.ok).toBe(true);
+  });
+});

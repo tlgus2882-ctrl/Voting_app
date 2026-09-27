@@ -2,6 +2,12 @@
 
 import { useActionState, useState } from "react";
 import {
+  CHART_TYPE_LABELS,
+  CHART_TYPES,
+  DEFAULT_CHART_TYPE,
+  type ChartType,
+} from "@/lib/chart-types";
+import {
   MAX_OPTION_LENGTH,
   MAX_OPTIONS,
   MAX_QUESTION_LENGTH,
@@ -46,6 +52,7 @@ export function CreatePollForm() {
 function PollFields() {
   const [question, setQuestion] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [chartType, setChartType] = useState<ChartType>(DEFAULT_CHART_TYPE);
   const [nextKey, setNextKey] = useState(MIN_OPTIONS);
   const [options, setOptions] = useState<OptionField[]>(
     Array.from({ length: MIN_OPTIONS }, (_, key) => ({ key, text: "" })),
@@ -127,6 +134,23 @@ function PollFields() {
         />
         <p className="text-xs text-zinc-500">비워 두면 삭제할 때까지 계속 투표를 받습니다.</p>
       </div>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium">결과 그래프</legend>
+        <div className="flex flex-wrap gap-4">
+          {CHART_TYPES.map((type) => (
+            <label key={type} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="chartType"
+                value={type}
+                checked={chartType === type}
+                onChange={() => setChartType(type)}
+              />
+              {CHART_TYPE_LABELS[type]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </>
   );
 }

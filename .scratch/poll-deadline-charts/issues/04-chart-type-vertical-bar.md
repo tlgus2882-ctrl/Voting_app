@@ -14,13 +14,13 @@ Spec: `.scratch/poll-deadline-charts/spec.md`
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 테스트: Chart Type을 생략하면 가로 막대로 저장되고 `getPoll`이 그대로 반환한다
-- [ ] 테스트: 세로 막대로 올린 Poll은 `getPoll`에서 세로 막대를 반환한다
-- [ ] 테스트: 모르는 Chart Type은 `invalid-chart-type`으로 거부하고 아무것도 저장하지 않는다
-- [ ] 테스트: 막대 차트는 Option 10개를 허용한다
-- [ ] Operator 폼에 Chart Type 선택이 있고, 기본값은 가로 막대다
-- [ ] 세로 막대 Result가 Option 2개와 10개, 100자 Option, 모바일 폭, 다크 모드에서 겹치거나 넘치지 않는다
-- [ ] 표가 0개인 세로 막대가 깨지지 않는다
-- [ ] 기존(Chart Type이 없던) Poll이 가로 막대로 보인다
+- [x] 테스트: Chart Type을 생략하면 가로 막대로 저장되고 `getPoll`이 그대로 반환한다
+- [x] 테스트: 세로 막대로 올린 Poll은 `getPoll`에서 세로 막대를 반환한다
+- [x] 테스트: 모르는 Chart Type은 `invalid-chart-type`으로 거부하고 아무것도 저장하지 않는다
+- [x] 테스트: 막대 차트는 Option 10개를 허용한다
+- [x] Operator 폼에 Chart Type 선택이 있고, 기본값은 가로 막대다
+- [x] 세로 막대 Result가 Option 2개와 10개, 100자 Option, 모바일 폭, 다크 모드에서 겹치거나 넘치지 않는다
+- [x] 표가 0개인 세로 막대가 깨지지 않는다
+- [x] 기존(Chart Type이 없던) Poll이 가로 막대로 보인다

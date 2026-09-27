@@ -1,3 +1,4 @@
+import { DEFAULT_CHART_TYPE, isChartType, type ChartType } from "@/lib/chart-types";
 import type { Db } from "@/lib/db";
 import {
   MAX_OPTION_LENGTH,
@@ -64,7 +65,8 @@ export type CreatePollError =
   | "option-empty"
   | "option-too-long"
   | "duplicate-options"
-  | "deadline-not-in-future";
+  | "deadline-not-in-future"
+  | "invalid-chart-type";
 
 /** What the Operator fills in to post a Poll, before trimming and validation. */
 export type NewPoll = {
@@ -72,6 +74,8 @@ export type NewPoll = {
   options: string[];
   /** When the Poll stops accepting Votes; omitted or null for never. */
   deadline?: Date | null;
+  /** Omitted for the default, horizontal bars. */
+  chartType?: string;
 };
 
 /** A Poll is Closed once its Deadline has passed; one without a Deadline never is. */
@@ -109,18 +113,22 @@ export async function createPoll(
   const question = input.question.trim();
   const options = input.options.map((o) => o.trim());
   const deadline = input.deadline ?? null;
+  const chartType = input.chartType ?? DEFAULT_CHART_TYPE;
   const error =
     validatePoll(question, options) ??
-    (deadline && deadline.getTime() <= now.getTime() ? "deadline-not-in-future" : null);
+    (deadline && deadline.getTime() <= now.getTime() ? "deadline-not-in-future" : null) ??
+    (isChartType(chartType) ? null : "invalid-chart-type");
   if (error) return { ok: false, error };
 
   const rows = await db.query<{ poll_id: number }>(
-    `WITH p AS (INSERT INTO polls (question, deadline) VALUES ($1, $3) RETURNING id)
+    `WITH p AS (
+       INSERT INTO polls (question, deadline, chart_type) VALUES ($1, $3, $4) RETURNING id
+     )
      INSERT INTO options (poll_id, text, position)
      SELECT p.id, o.text, o.ord
        FROM p, unnest($2::text[]) WITH ORDINALITY AS o(text, ord)
      RETURNING poll_id`,
-    [question, options, deadline],
+    [question, options, deadline, chartType],
   );
   return { ok: true, pollId: rows[0].poll_id };
 }
@@ -146,6 +154,7 @@ export type PollView = {
   question: string;
   deadline: Date | null;
   closed: boolean;
+  chartType: ChartType;
   options: PollOption[];
   /** The Option this Voter chose, or null if they haven't voted. */
   myOptionId: number | null;
@@ -167,9 +176,10 @@ export async function getPoll(
     id: number;
     question: string;
     deadline: Date | null;
+    chart_type: ChartType;
     my_option_id: number | null;
   }>(
-    `SELECT p.id, p.question, p.deadline,
+    `SELECT p.id, p.question, p.deadline, p.chart_type,
             (SELECT v.option_id FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $2) AS my_option_id
        FROM polls p
       WHERE p.id = $1`,
@@ -191,6 +201,7 @@ export async function getPoll(
     question: poll.question,
     deadline: poll.deadline,
     closed: isClosed(poll.deadline, now),
+    chartType: poll.chart_type,
     options: rows.map(({ id, text }) => ({ id, text })),
     myOptionId: poll.my_option_id,
   };

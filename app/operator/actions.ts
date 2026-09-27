@@ -46,6 +46,7 @@ const createPollMessages: Record<CreatePollError, string> = {
   "option-too-long": `선택지는 ${MAX_OPTION_LENGTH}자 이하로 입력해 주세요.`,
   "duplicate-options": "같은 선택지가 두 번 이상 있습니다.",
   "deadline-not-in-future": "마감 시간은 지금 이후로 정해 주세요.",
+  "invalid-chart-type": "그래프 종류를 다시 골라 주세요.",
 };
 
 /** `postedCount` bumps on every successful post so the form can reset. */
@@ -64,7 +65,12 @@ export async function createPollAction(
   if (deadlineInput !== "" && !deadline) {
     return { error: "마감 시간을 다시 입력해 주세요.", postedCount: prev.postedCount };
   }
-  const result = await createPoll(getDb(), { question, options, deadline }, new Date());
+  const chartType = String(formData.get("chartType") ?? "");
+  const result = await createPoll(
+    getDb(),
+    { question, options, deadline, chartType },
+    new Date(),
+  );
   if (!result.ok) {
     return { error: createPollMessages[result.error], postedCount: prev.postedCount };
   }

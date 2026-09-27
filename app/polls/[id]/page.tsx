@@ -34,7 +34,13 @@ export default async function PollPage({ params, searchParams }: PageProps<"/pol
           )
         )}
       </div>
-      {poll.result && <ResultView result={poll.result} myOptionId={poll.myOptionId} />}
+      {poll.result && (
+        <ResultView
+          result={poll.result}
+          myOptionId={poll.myOptionId}
+          chartType={poll.chartType}
+        />
+      )}
       {poll.myOptionId === null && !poll.closed && (
         <VoteForm pollId={poll.id} options={poll.options} />
       )}

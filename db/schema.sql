@@ -23,3 +23,6 @@ CREATE TABLE IF NOT EXISTS votes (
 );
 
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS deadline timestamptz;
+
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS chart_type text NOT NULL DEFAULT 'horizontal-bar'
+  CHECK (chart_type IN ('horizontal-bar', 'vertical-bar', 'donut'));
