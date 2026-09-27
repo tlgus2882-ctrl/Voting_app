@@ -1,9 +1,19 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getDb } from "@/lib/neon-db";
 import { isOperator } from "@/lib/operator-session";
+import { listPolls } from "@/lib/polls";
+import { readVoterId } from "@/lib/voter";
 import { signOut } from "./actions";
+import { CreatePollForm } from "./create-poll-form";
 
 export default async function OperatorPage() {
   if (!(await isOperator())) redirect("/operator/login");
+
+  const polls = await listPolls(getDb(), {
+    voterId: await readVoterId(),
+    isOperator: true,
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -18,6 +28,28 @@ export default async function OperatorPage() {
           </button>
         </form>
       </div>
+
+      <CreatePollForm />
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">올린 투표 주제</h2>
+        {polls.length === 0 ? (
+          <p className="text-zinc-500">아직 올린 투표 주제가 없습니다.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {polls.map((poll) => (
+              <li
+                key={poll.id}
+                className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <Link href={`/polls/${poll.id}`} className="font-medium hover:underline">
+                  {poll.question}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

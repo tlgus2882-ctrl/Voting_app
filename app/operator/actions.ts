@@ -1,11 +1,21 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getDb } from "@/lib/neon-db";
 import {
   endOperatorSession,
   isCorrectOperatorPassword,
+  isOperator,
   startOperatorSession,
 } from "@/lib/operator-session";
+import {
+  MAX_OPTION_LENGTH,
+  MAX_OPTIONS,
+  MAX_QUESTION_LENGTH,
+  MIN_OPTIONS,
+} from "@/lib/poll-limits";
+import { createPoll, type CreatePollError } from "@/lib/polls";
 
 export type SignInState = { error: string | null };
 
@@ -24,4 +34,33 @@ export async function signIn(
 export async function signOut(): Promise<void> {
   await endOperatorSession();
   redirect("/operator/login");
+}
+
+const createPollMessages: Record<CreatePollError, string> = {
+  "question-empty": "질문을 입력해 주세요.",
+  "question-too-long": `질문은 ${MAX_QUESTION_LENGTH}자 이하로 입력해 주세요.`,
+  "too-few-options": `선택지는 ${MIN_OPTIONS}개 이상이어야 합니다.`,
+  "too-many-options": `선택지는 ${MAX_OPTIONS}개 이하여야 합니다.`,
+  "option-empty": "비어 있는 선택지가 있습니다.",
+  "option-too-long": `선택지는 ${MAX_OPTION_LENGTH}자 이하로 입력해 주세요.`,
+  "duplicate-options": "같은 선택지가 두 번 이상 있습니다.",
+};
+
+/** `postedCount` bumps on every successful post so the form can reset. */
+export type CreatePollState = { error: string | null; postedCount: number };
+
+export async function createPollAction(
+  prev: CreatePollState,
+  formData: FormData,
+): Promise<CreatePollState> {
+  if (!(await isOperator())) redirect("/operator/login");
+
+  const question = String(formData.get("question") ?? "");
+  const options = formData.getAll("option").map(String);
+  const result = await createPoll(getDb(), question, options);
+  if (!result.ok) {
+    return { error: createPollMessages[result.error], postedCount: prev.postedCount };
+  }
+  revalidatePath("/operator");
+  return { error: null, postedCount: prev.postedCount + 1 };
 }
