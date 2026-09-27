@@ -6,6 +6,7 @@ import { listPolls } from "@/lib/polls";
 import { readVoterId } from "@/lib/voter";
 import { signOut } from "./actions";
 import { CreatePollForm } from "./create-poll-form";
+import { DeletePollButton } from "./delete-poll-button";
 
 export default async function OperatorPage() {
   if (!(await isOperator())) redirect("/operator/login");
@@ -42,9 +43,13 @@ export default async function OperatorPage() {
                 key={poll.id}
                 className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <Link href={`/polls/${poll.id}`} className="font-medium hover:underline">
-                  {poll.question}
-                </Link>
+                <div className="flex flex-col">
+                  <Link href={`/polls/${poll.id}`} className="font-medium hover:underline">
+                    {poll.question}
+                  </Link>
+                  <span className="text-sm text-zinc-500">{poll.totalVotes ?? 0}표</span>
+                </div>
+                <DeletePollButton pollId={poll.id} totalVotes={poll.totalVotes ?? 0} />
               </li>
             ))}
           </ul>

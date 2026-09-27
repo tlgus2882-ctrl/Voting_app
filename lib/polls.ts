@@ -17,18 +17,22 @@ export type PollSummary = {
   question: string;
   createdAt: Date;
   hasVoted: boolean;
+  /** Present only for the Operator. */
+  totalVotes?: number;
 };
 
-/** All Polls, newest first. Vote counts are never included. */
+/** All Polls, newest first. Vote counts are included for the Operator only. */
 export async function listPolls(db: Db, viewer: Viewer): Promise<PollSummary[]> {
   const rows = await db.query<{
     id: number;
     question: string;
     created_at: Date;
     has_voted: boolean;
+    total_votes: number;
   }>(
     `SELECT p.id, p.question, p.created_at,
-            EXISTS (SELECT 1 FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $1) AS has_voted
+            EXISTS (SELECT 1 FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $1) AS has_voted,
+            (SELECT count(*)::int FROM votes v WHERE v.poll_id = p.id) AS total_votes
        FROM polls p
       ORDER BY p.id DESC`,
     [viewer.voterId],
@@ -38,6 +42,7 @@ export async function listPolls(db: Db, viewer: Viewer): Promise<PollSummary[]> 
     question: r.question,
     createdAt: r.created_at,
     hasVoted: r.has_voted,
+    ...(viewer.isOperator && { totalVotes: r.total_votes }),
   }));
 }
 
@@ -205,4 +210,21 @@ function tally(rows: { id: number; text: string; votes: number }[]): PollResult 
       percent: totalVotes === 0 ? 0 : Math.round((r.votes * 100) / totalVotes),
     })),
   };
+}
+
+/**
+ * Permanently deletes a Poll and its Votes. Returns how many Votes were
+ * deleted, or null if the Poll doesn't exist.
+ */
+export async function deletePoll(
+  db: Db,
+  pollId: number,
+): Promise<{ deletedVotes: number } | null> {
+  // The subquery sees the pre-delete snapshot, so it counts the doomed Votes.
+  const [row] = await db.query<{ deleted_votes: number }>(
+    `WITH d AS (DELETE FROM polls WHERE id = $1 RETURNING id)
+     SELECT (SELECT count(*)::int FROM votes WHERE poll_id = $1) AS deleted_votes FROM d`,
+    [pollId],
+  );
+  return row ? { deletedVotes: row.deleted_votes } : null;
 }

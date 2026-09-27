@@ -23,7 +23,7 @@ export async function castVoteAction(
     case "already-voted":
       redirect(`/polls/${pollId}`);
     case "poll-not-found":
-      return { error: "삭제된 투표 주제입니다." };
+      redirect("/?notice=poll-deleted");
     case "option-not-in-poll":
       return { error: "선택지를 다시 골라 주세요." };
   }

@@ -15,7 +15,7 @@ import {
   MAX_QUESTION_LENGTH,
   MIN_OPTIONS,
 } from "@/lib/poll-limits";
-import { createPoll, type CreatePollError } from "@/lib/polls";
+import { createPoll, deletePoll, type CreatePollError } from "@/lib/polls";
 
 export type SignInState = { error: string | null };
 
@@ -63,4 +63,12 @@ export async function createPollAction(
   }
   revalidatePath("/operator");
   return { error: null, postedCount: prev.postedCount + 1 };
+}
+
+export async function deletePollAction(formData: FormData): Promise<void> {
+  if (!(await isOperator())) redirect("/operator/login");
+
+  const pollId = Number(formData.get("pollId"));
+  if (Number.isInteger(pollId)) await deletePoll(getDb(), pollId);
+  revalidatePath("/operator");
 }

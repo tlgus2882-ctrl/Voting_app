@@ -10,12 +10,12 @@ Spec: `.scratch/voting-app/spec.md`
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Vote 제출 직후 Result 화면으로 이어진다
-- [ ] Result에 표 수·퍼센트·막대·총 표 수가 보이고 내 선택이 강조된다
-- [ ] 로그인한 Operator는 Vote 없이 Result를 본다
-- [ ] 테스트: Vote 전 Voter에게는 Result가 반환되지 않는다
-- [ ] 테스트: Vote 후에는 Result가 반환되고 표 수·퍼센트·총 표 수가 맞다
-- [ ] 테스트: Operator에게는 Vote 없이도 Result가 반환된다
-- [ ] 테스트: 표 0개 Poll(Operator 조회)에서 퍼센트가 모두 0이다
+- [x] Vote 제출 직후 Result 화면으로 이어진다
+- [x] Result에 표 수·퍼센트·막대·총 표 수가 보이고 내 선택이 강조된다
+- [x] 로그인한 Operator는 Vote 없이 Result를 본다
+- [x] 테스트: Vote 전 Voter에게는 Result가 반환되지 않는다
+- [x] 테스트: Vote 후에는 Result가 반환되고 표 수·퍼센트·총 표 수가 맞다
+- [x] 테스트: Operator에게는 Vote 없이도 Result가 반환된다
+- [x] 테스트: 표 0개 Poll(Operator 조회)에서 퍼센트가 모두 0이다

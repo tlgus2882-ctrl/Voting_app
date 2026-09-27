@@ -10,12 +10,12 @@ Spec: `.scratch/voting-app/spec.md`
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 관리 페이지의 각 Poll에 삭제 버튼이 있고, Vote 수를 담은 확인 창을 거쳐 삭제된다
-- [ ] 삭제된 Poll은 홈 목록에서 사라지고 그 URL은 not-found가 된다
-- [ ] 로그인하지 않은 요청으로는 삭제할 수 없다
-- [ ] 삭제된 Poll에 Vote를 제출하면 안내 문구와 함께 홈으로 이동한다
-- [ ] 테스트: `deletePoll`이 삭제된 Vote 수를 반환한다
-- [ ] 테스트: 삭제 후 `listPolls`·`getPoll`에서 사라지고 관련 Vote도 남지 않는다
-- [ ] 테스트: 삭제된 Poll에 대한 `castVote`는 Poll 없음으로 거부된다
+- [x] 관리 페이지의 각 Poll에 삭제 버튼이 있고, Vote 수를 담은 확인 창을 거쳐 삭제된다
+- [x] 삭제된 Poll은 홈 목록에서 사라지고 그 URL은 not-found가 된다
+- [x] 로그인하지 않은 요청으로는 삭제할 수 없다
+- [x] 삭제된 Poll에 Vote를 제출하면 안내 문구와 함께 홈으로 이동한다
+- [x] 테스트: `deletePoll`이 삭제된 Vote 수를 반환한다
+- [x] 테스트: 삭제 후 `listPolls`·`getPoll`에서 사라지고 관련 Vote도 남지 않는다
+- [x] 테스트: 삭제된 Poll에 대한 `castVote`는 Poll 없음으로 거부된다

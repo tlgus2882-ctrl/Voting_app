@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/lib/db";
-import { castVote, createPoll, getPoll, listPolls } from "@/lib/polls";
+import { castVote, createPoll, deletePoll, getPoll, listPolls } from "@/lib/polls";
 import { createTestDb } from "@/test/pglite-db";
 
 const voter = { voterId: "voter-a", isOperator: false };
@@ -183,5 +183,58 @@ describe("Result", () => {
 
     expect(poll?.result?.totalVotes).toBe(0);
     expect(poll?.result?.options.map((o) => o.percent)).toEqual([0, 0]);
+  });
+});
+
+describe("deletePoll", () => {
+  it("removes the Poll with its Votes and reports how many Votes went with it", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const keptId = await postPoll("남을 Poll", ["a", "b"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-a");
+    await castVote(db, pollId, jjajang.id, "voter-b");
+
+    expect(await deletePoll(db, pollId)).toEqual({ deletedVotes: 2 });
+
+    expect(await getPoll(db, pollId, voter)).toBeNull();
+    expect((await listPolls(db, voter)).map((p) => p.id)).toEqual([keptId]);
+  });
+
+  it("returns null for a Poll that does not exist", async () => {
+    expect(await deletePoll(db, 999)).toBeNull();
+  });
+
+  it("makes later Votes in the deleted Poll fail as poll-not-found", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+    await deletePoll(db, pollId);
+
+    expect(await castVote(db, pollId, jjajang.id, "voter-a")).toBe("poll-not-found");
+  });
+
+  it("frees the Voter to vote in a new Poll with the same Question", async () => {
+    const oldId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [old] = (await getPoll(db, oldId, voter))!.options;
+    await castVote(db, oldId, old.id, "voter-a");
+    await deletePoll(db, oldId);
+
+    const newId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [fresh] = (await getPoll(db, newId, voter))!.options;
+
+    expect(await castVote(db, newId, fresh.id, "voter-a")).toBe("ok");
+  });
+});
+
+describe("listPolls vote totals", () => {
+  it("includes each Poll's total Votes for the Operator only", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-b");
+
+    const [forVoter] = await listPolls(db, voter);
+    const [forOperator] = await listPolls(db, { voterId: null, isOperator: true });
+
+    expect(forVoter).not.toHaveProperty("totalVotes");
+    expect(forOperator.totalVotes).toBe(1);
   });
 });

@@ -11,10 +11,10 @@ Spec: `.scratch/voting-app/spec.md`
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Vitest + PGlite 테스트 환경이 `npm test`로 돌아간다
-- [ ] 스키마 적용 스크립트가 로컬 `DATABASE_URL`(Neon)에 테이블을 만든다 (여러 번 실행해도 안전)
-- [ ] 홈 화면이 Neon에서 Poll 목록을 읽고, 비어 있으면 빈 상태 문구를 보여준다
-- [ ] 테스트: Poll이 없으면 `listPolls`가 빈 배열을 반환한다
-- [ ] 테스트: 스키마에 직접 넣은 Poll들이 최신순으로, 표 수 없이 반환된다
+- [x] Vitest + PGlite 테스트 환경이 `npm test`로 돌아간다
+- [x] 스키마 적용 스크립트가 로컬 `DATABASE_URL`(Neon)에 테이블을 만든다 (여러 번 실행해도 안전)
+- [x] 홈 화면이 Neon에서 Poll 목록을 읽고, 비어 있으면 빈 상태 문구를 보여준다
+- [x] 테스트: Poll이 없으면 `listPolls`가 빈 배열을 반환한다
+- [x] 테스트: 스키마에 직접 넣은 Poll들이 최신순으로, 표 수 없이 반환된다

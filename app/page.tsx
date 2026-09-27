@@ -1,22 +1,37 @@
 import Link from "next/link";
 import { getDb } from "@/lib/neon-db";
-import { listPolls } from "@/lib/polls";
+import { listPolls, type PollSummary } from "@/lib/polls";
 import { readVoterId } from "@/lib/voter";
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { notice } = await searchParams;
   const polls = await listPolls(getDb(), {
     voterId: await readVoterId(),
     isOperator: false,
   });
 
-  if (polls.length === 0) {
-    return (
-      <p className="py-16 text-center text-zinc-500">
-        아직 올라온 투표 주제가 없습니다.
-      </p>
-    );
-  }
+  return (
+    <div className="flex flex-col gap-4">
+      {notice === "poll-deleted" && (
+        <p
+          role="status"
+          className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+        >
+          삭제된 투표 주제입니다.
+        </p>
+      )}
+      {polls.length === 0 ? (
+        <p className="py-16 text-center text-zinc-500">
+          아직 올라온 투표 주제가 없습니다.
+        </p>
+      ) : (
+        <PollList polls={polls} />
+      )}
+    </div>
+  );
+}
 
+function PollList({ polls }: { polls: PollSummary[] }) {
   return (
     <ul className="flex flex-col gap-3">
       {polls.map((poll) => (

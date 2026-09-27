@@ -9,12 +9,12 @@ Spec: `.scratch/voting-app/spec.md`
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 폼으로 Poll을 올리면 홈 목록 맨 위에 나타난다
-- [ ] 로그인하지 않은 요청으로는 Poll을 만들 수 없다
-- [ ] 테스트: Option 1개·11개 거부, 빈 Question 거부
-- [ ] 테스트: Question 200자 허용·201자 거부, Option 100자 허용·101자 거부
-- [ ] 테스트: 공백 제거 후 같은 Option 두 개면 거부
-- [ ] 테스트: 정상 생성 시 Question·Option이 trim되고 입력 순서가 보존된다
-- [ ] 테스트: 검증 실패 시 아무것도 저장되지 않는다
+- [x] 폼으로 Poll을 올리면 홈 목록 맨 위에 나타난다
+- [x] 로그인하지 않은 요청으로는 Poll을 만들 수 없다
+- [x] 테스트: Option 1개·11개 거부, 빈 Question 거부
+- [x] 테스트: Question 200자 허용·201자 거부, Option 100자 허용·101자 거부
+- [x] 테스트: 공백 제거 후 같은 Option 두 개면 거부
+- [x] 테스트: 정상 생성 시 Question·Option이 trim되고 입력 순서가 보존된다
+- [x] 테스트: 검증 실패 시 아무것도 저장되지 않는다

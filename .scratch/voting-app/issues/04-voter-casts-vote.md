@@ -11,13 +11,13 @@ Spec: `.scratch/voting-app/spec.md`
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Poll 페이지에서 Option을 골라 제출하면 Vote가 기록되고 "투표 완료" 상태가 보인다
-- [ ] 같은 브라우저로 다시 열면 Option 선택 UI가 나오지 않는다
-- [ ] 홈 목록에서 Vote한 Poll에 "투표 완료"가 표시된다
-- [ ] 없는 Poll의 URL은 not-found 페이지를 보여준다
-- [ ] 테스트: 정상 Vote 후 `getPoll`/`listPolls`가 Vote 여부와 선택 Option을 반영한다
-- [ ] 테스트: 같은 Voter의 두 번째 Vote는 거부되고 기존 Vote는 바뀌지 않는다
-- [ ] 테스트: 다른 Poll의 Option으로 Vote하면 거부된다
-- [ ] 테스트: 서로 다른 Voter는 같은 Poll에 각각 Vote할 수 있다
+- [x] Poll 페이지에서 Option을 골라 제출하면 Vote가 기록되고 "투표 완료" 상태가 보인다
+- [x] 같은 브라우저로 다시 열면 Option 선택 UI가 나오지 않는다
+- [x] 홈 목록에서 Vote한 Poll에 "투표 완료"가 표시된다
+- [x] 없는 Poll의 URL은 not-found 페이지를 보여준다
+- [x] 테스트: 정상 Vote 후 `getPoll`/`listPolls`가 Vote 여부와 선택 Option을 반영한다
+- [x] 테스트: 같은 Voter의 두 번째 Vote는 거부되고 기존 Vote는 바뀌지 않는다
+- [x] 테스트: 다른 Poll의 Option으로 Vote하면 거부된다
+- [x] 테스트: 서로 다른 Voter는 같은 Poll에 각각 Vote할 수 있다
