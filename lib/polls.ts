@@ -1,6 +1,7 @@
 import { DEFAULT_CHART_TYPE, isChartType, type ChartType } from "@/lib/chart-types";
 import type { Db } from "@/lib/db";
 import {
+  MAX_DONUT_OPTIONS,
   MAX_OPTION_LENGTH,
   MAX_OPTIONS,
   MAX_QUESTION_LENGTH,
@@ -66,7 +67,8 @@ export type CreatePollError =
   | "option-too-long"
   | "duplicate-options"
   | "deadline-not-in-future"
-  | "invalid-chart-type";
+  | "invalid-chart-type"
+  | "too-many-options-for-donut";
 
 /** What the Operator fills in to post a Poll, before trimming and validation. */
 export type NewPoll = {
@@ -117,7 +119,10 @@ export async function createPoll(
   const error =
     validatePoll(question, options) ??
     (deadline && deadline.getTime() <= now.getTime() ? "deadline-not-in-future" : null) ??
-    (isChartType(chartType) ? null : "invalid-chart-type");
+    (isChartType(chartType) ? null : "invalid-chart-type") ??
+    (chartType === "donut" && options.length > MAX_DONUT_OPTIONS
+      ? "too-many-options-for-donut"
+      : null);
   if (error) return { ok: false, error };
 
   const rows = await db.query<{ poll_id: number }>(

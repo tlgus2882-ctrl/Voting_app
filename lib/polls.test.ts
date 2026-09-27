@@ -375,4 +375,21 @@ describe("Chart Type", () => {
 
     expect(result.ok).toBe(true);
   });
+
+  it("allows a donut for a Poll with 5 Options", async () => {
+    const five = ["a", "b", "c", "d", "e"];
+    const result = await createPoll(db, { question: "Q?", options: five, chartType: "donut" }, now);
+    if (!result.ok) throw new Error(result.error);
+
+    expect((await getPoll(db, result.pollId, voter, now))?.chartType).toBe("donut");
+  });
+
+  it("rejects a donut for a Poll with 6 Options", async () => {
+    const six = ["a", "b", "c", "d", "e", "f"];
+
+    expect(
+      await createPoll(db, { question: "Q?", options: six, chartType: "donut" }, now),
+    ).toEqual({ ok: false, error: "too-many-options-for-donut" });
+    expect(await listPolls(db, voter, now)).toEqual([]);
+  });
 });

@@ -11,6 +11,7 @@ import {
   startOperatorSession,
 } from "@/lib/operator-session";
 import {
+  MAX_DONUT_OPTIONS,
   MAX_OPTION_LENGTH,
   MAX_OPTIONS,
   MAX_QUESTION_LENGTH,
@@ -47,6 +48,7 @@ const createPollMessages: Record<CreatePollError, string> = {
   "duplicate-options": "같은 선택지가 두 번 이상 있습니다.",
   "deadline-not-in-future": "마감 시간은 지금 이후로 정해 주세요.",
   "invalid-chart-type": "그래프 종류를 다시 골라 주세요.",
+  "too-many-options-for-donut": `도넛 그래프는 선택지가 ${MAX_DONUT_OPTIONS}개 이하일 때만 쓸 수 있습니다.`,
 };
 
 /** `postedCount` bumps on every successful post so the form can reset. */

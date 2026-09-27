@@ -8,6 +8,7 @@ import {
   type ChartType,
 } from "@/lib/chart-types";
 import {
+  MAX_DONUT_OPTIONS,
   MAX_OPTION_LENGTH,
   MAX_OPTIONS,
   MAX_QUESTION_LENGTH,
@@ -53,6 +54,8 @@ function PollFields() {
   const [question, setQuestion] = useState("");
   const [deadline, setDeadline] = useState("");
   const [chartType, setChartType] = useState<ChartType>(DEFAULT_CHART_TYPE);
+  // A donut can't take more Options, so stop offering to add them.
+  const maxOptions = chartType === "donut" ? MAX_DONUT_OPTIONS : MAX_OPTIONS;
   const [nextKey, setNextKey] = useState(MIN_OPTIONS);
   const [options, setOptions] = useState<OptionField[]>(
     Array.from({ length: MIN_OPTIONS }, (_, key) => ({ key, text: "" })),
@@ -110,7 +113,7 @@ function PollFields() {
             )}
           </div>
         ))}
-        {options.length < MAX_OPTIONS && (
+        {options.length < maxOptions && (
           <button
             type="button"
             onClick={addOption}
@@ -118,6 +121,11 @@ function PollFields() {
           >
             + 선택지 추가
           </button>
+        )}
+        {chartType === "donut" && options.length >= MAX_DONUT_OPTIONS && (
+          <p className="text-xs text-zinc-500">
+            도넛 그래프는 선택지를 {MAX_DONUT_OPTIONS}개까지 쓸 수 있습니다.
+          </p>
         )}
       </fieldset>
       <div className="flex flex-col gap-2">
@@ -137,18 +145,26 @@ function PollFields() {
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium">결과 그래프</legend>
         <div className="flex flex-wrap gap-4">
-          {CHART_TYPES.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="chartType"
-                value={type}
-                checked={chartType === type}
-                onChange={() => setChartType(type)}
-              />
-              {CHART_TYPE_LABELS[type]}
-            </label>
-          ))}
+          {CHART_TYPES.map((type) => {
+            const disabled = type === "donut" && options.length > MAX_DONUT_OPTIONS;
+            return (
+              <label
+                key={type}
+                className={`flex items-center gap-2 text-sm ${disabled ? "text-zinc-400 dark:text-zinc-600" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="chartType"
+                  value={type}
+                  checked={chartType === type}
+                  disabled={disabled}
+                  onChange={() => setChartType(type)}
+                />
+                {CHART_TYPE_LABELS[type]}
+                {disabled && ` (선택지 ${MAX_DONUT_OPTIONS}개 이하)`}
+              </label>
+            );
+          })}
         </div>
       </fieldset>
     </>
