@@ -8,7 +8,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const polls = await listPolls(getDb(), {
     voterId: await readVoterId(),
     isOperator: false,
-  });
+  }, new Date());
 
   return (
     <div className="flex flex-col gap-4">

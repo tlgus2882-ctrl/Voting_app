@@ -14,7 +14,7 @@ export default async function OperatorPage() {
   const polls = await listPolls(getDb(), {
     voterId: await readVoterId(),
     isOperator: true,
-  });
+  }, new Date());
 
   return (
     <div className="flex flex-col gap-8">

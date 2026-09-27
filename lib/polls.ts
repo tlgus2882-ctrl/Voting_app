@@ -22,7 +22,11 @@ export type PollSummary = {
 };
 
 /** All Polls, newest first. Vote counts are included for the Operator only. */
-export async function listPolls(db: Db, viewer: Viewer): Promise<PollSummary[]> {
+export async function listPolls(
+  db: Db,
+  viewer: Viewer,
+  now: Date,
+): Promise<PollSummary[]> {
   const rows = await db.query<{
     id: number;
     question: string;
@@ -56,6 +60,12 @@ export type CreatePollError =
   | "option-too-long"
   | "duplicate-options";
 
+/** What the Operator fills in to post a Poll, before trimming and validation. */
+export type NewPoll = {
+  question: string;
+  options: string[];
+};
+
 export type CreatePollResult =
   | { ok: true; pollId: number }
   | { ok: false; error: CreatePollError };
@@ -80,11 +90,11 @@ function validatePoll(question: string, options: string[]): CreatePollError | nu
  */
 export async function createPoll(
   db: Db,
-  rawQuestion: string,
-  rawOptions: string[],
+  input: NewPoll,
+  now: Date,
 ): Promise<CreatePollResult> {
-  const question = rawQuestion.trim();
-  const options = rawOptions.map((o) => o.trim());
+  const question = input.question.trim();
+  const options = input.options.map((o) => o.trim());
   const error = validatePoll(question, options);
   if (error) return { ok: false, error };
 
@@ -133,6 +143,7 @@ export async function getPoll(
   db: Db,
   pollId: number,
   viewer: Viewer,
+  now: Date,
 ): Promise<PollView | null> {
   const [poll] = await db.query<{ id: number; question: string; my_option_id: number | null }>(
     `SELECT p.id, p.question,
@@ -164,6 +175,13 @@ export async function getPoll(
   return view;
 }
 
+/** One Voter choosing one Option in one Poll. */
+export type NewVote = {
+  pollId: number;
+  optionId: number;
+  voterId: string;
+};
+
 export type CastVoteResult =
   | "ok"
   | "already-voted"
@@ -176,9 +194,8 @@ export type CastVoteResult =
  */
 export async function castVote(
   db: Db,
-  pollId: number,
-  optionId: number,
-  voterId: string,
+  { pollId, optionId, voterId }: NewVote,
+  now: Date,
 ): Promise<CastVoteResult> {
   const inserted = await db.query(
     `INSERT INTO votes (poll_id, option_id, voter_id)

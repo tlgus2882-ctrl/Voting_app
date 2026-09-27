@@ -13,7 +13,7 @@ export default async function PollPage({ params }: PageProps<"/polls/[id]">) {
   const poll = await getPoll(getDb(), Number(id), {
     voterId: await readVoterId(),
     isOperator: await isOperator(),
-  });
+  }, new Date());
   if (!poll) notFound();
 
   return (

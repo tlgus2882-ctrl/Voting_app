@@ -57,7 +57,7 @@ export async function createPollAction(
 
   const question = String(formData.get("question") ?? "");
   const options = formData.getAll("option").map(String);
-  const result = await createPoll(getDb(), question, options);
+  const result = await createPoll(getDb(), { question, options }, new Date());
   if (!result.ok) {
     return { error: createPollMessages[result.error], postedCount: prev.postedCount };
   }
