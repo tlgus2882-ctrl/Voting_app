@@ -21,3 +21,5 @@ CREATE TABLE IF NOT EXISTS votes (
   PRIMARY KEY (poll_id, voter_id),
   FOREIGN KEY (poll_id, option_id) REFERENCES options (poll_id, id) ON DELETE CASCADE
 );
+
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS deadline timestamptz;

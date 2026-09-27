@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDb } from "@/lib/neon-db";
+import { Badge } from "./badge";
 import { listPolls, type PollSummary } from "@/lib/polls";
 import { readViewer } from "@/lib/viewer";
 
@@ -38,11 +39,10 @@ function PollList({ polls }: { polls: PollSummary[] }) {
             className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
           >
             <span className="font-medium">{poll.question}</span>
-            {poll.hasVoted && (
-              <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                투표 완료
-              </span>
-            )}
+            <span className="flex shrink-0 gap-1">
+              {poll.closed && <Badge>마감됨</Badge>}
+              {poll.hasVoted && <Badge>투표 완료</Badge>}
+            </span>
           </Link>
         </li>
       ))}

@@ -25,6 +25,8 @@ export async function castVoteAction(
       redirect(`/polls/${pollId}`);
     case "poll-not-found":
       redirect("/?notice=poll-deleted");
+    case "poll-closed":
+      redirect(`/polls/${pollId}?notice=poll-closed`);
     case "option-not-in-poll":
       return { error: "선택지를 다시 골라 주세요." };
   }

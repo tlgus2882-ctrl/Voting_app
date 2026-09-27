@@ -17,6 +17,8 @@ export type PollSummary = {
   question: string;
   createdAt: Date;
   hasVoted: boolean;
+  deadline: Date | null;
+  closed: boolean;
   /** Present only for the Operator. */
   totalVotes?: number;
 };
@@ -31,10 +33,11 @@ export async function listPolls(
     id: number;
     question: string;
     created_at: Date;
+    deadline: Date | null;
     has_voted: boolean;
     total_votes: number;
   }>(
-    `SELECT p.id, p.question, p.created_at,
+    `SELECT p.id, p.question, p.created_at, p.deadline,
             EXISTS (SELECT 1 FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $1) AS has_voted,
             (SELECT count(*)::int FROM votes v WHERE v.poll_id = p.id) AS total_votes
        FROM polls p
@@ -46,6 +49,8 @@ export async function listPolls(
     question: r.question,
     createdAt: r.created_at,
     hasVoted: r.has_voted,
+    deadline: r.deadline,
+    closed: isClosed(r.deadline, now),
     ...(viewer.isOperator && { totalVotes: r.total_votes }),
   }));
 }
@@ -58,13 +63,21 @@ export type CreatePollError =
   | "too-many-options"
   | "option-empty"
   | "option-too-long"
-  | "duplicate-options";
+  | "duplicate-options"
+  | "deadline-not-in-future";
 
 /** What the Operator fills in to post a Poll, before trimming and validation. */
 export type NewPoll = {
   question: string;
   options: string[];
+  /** When the Poll stops accepting Votes; omitted or null for never. */
+  deadline?: Date | null;
 };
+
+/** A Poll is Closed once its Deadline has passed; one without a Deadline never is. */
+function isClosed(deadline: Date | null, now: Date): boolean {
+  return deadline !== null && now.getTime() >= deadline.getTime();
+}
 
 export type CreatePollResult =
   | { ok: true; pollId: number }
@@ -95,16 +108,19 @@ export async function createPoll(
 ): Promise<CreatePollResult> {
   const question = input.question.trim();
   const options = input.options.map((o) => o.trim());
-  const error = validatePoll(question, options);
+  const deadline = input.deadline ?? null;
+  const error =
+    validatePoll(question, options) ??
+    (deadline && deadline.getTime() <= now.getTime() ? "deadline-not-in-future" : null);
   if (error) return { ok: false, error };
 
   const rows = await db.query<{ poll_id: number }>(
-    `WITH p AS (INSERT INTO polls (question) VALUES ($1) RETURNING id)
+    `WITH p AS (INSERT INTO polls (question, deadline) VALUES ($1, $3) RETURNING id)
      INSERT INTO options (poll_id, text, position)
      SELECT p.id, o.text, o.ord
        FROM p, unnest($2::text[]) WITH ORDINALITY AS o(text, ord)
      RETURNING poll_id`,
-    [question, options],
+    [question, options, deadline],
   );
   return { ok: true, pollId: rows[0].poll_id };
 }
@@ -128,10 +144,12 @@ export type PollResult = {
 export type PollView = {
   id: number;
   question: string;
+  deadline: Date | null;
+  closed: boolean;
   options: PollOption[];
   /** The Option this Voter chose, or null if they haven't voted. */
   myOptionId: number | null;
-  /** Present only if the viewer has voted in this Poll or is the Operator. */
+  /** Present only if the viewer has voted in this Poll, is the Operator, or the Poll is Closed. */
   result?: PollResult;
 };
 
@@ -145,8 +163,13 @@ export async function getPoll(
   viewer: Viewer,
   now: Date,
 ): Promise<PollView | null> {
-  const [poll] = await db.query<{ id: number; question: string; my_option_id: number | null }>(
-    `SELECT p.id, p.question,
+  const [poll] = await db.query<{
+    id: number;
+    question: string;
+    deadline: Date | null;
+    my_option_id: number | null;
+  }>(
+    `SELECT p.id, p.question, p.deadline,
             (SELECT v.option_id FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $2) AS my_option_id
        FROM polls p
       WHERE p.id = $1`,
@@ -166,10 +189,12 @@ export async function getPoll(
   const view: PollView = {
     id: poll.id,
     question: poll.question,
+    deadline: poll.deadline,
+    closed: isClosed(poll.deadline, now),
     options: rows.map(({ id, text }) => ({ id, text })),
     myOptionId: poll.my_option_id,
   };
-  if (poll.my_option_id !== null || viewer.isOperator) {
+  if (poll.my_option_id !== null || viewer.isOperator || view.closed) {
     view.result = tally(rows);
   }
   return view;
@@ -186,33 +211,45 @@ export type CastVoteResult =
   | "ok"
   | "already-voted"
   | "poll-not-found"
+  | "poll-closed"
   | "option-not-in-poll";
 
 /**
  * Records one Voter's Vote for one Option. A Vote is final: a Voter's second
- * Vote in the same Poll is rejected, not applied.
+ * Vote in the same Poll is rejected, not applied. A Closed Poll takes no Votes.
  */
 export async function castVote(
   db: Db,
   { pollId, optionId, voterId }: NewVote,
   now: Date,
 ): Promise<CastVoteResult> {
+  // The Deadline is checked in the same statement that inserts, so a Poll
+  // can't close between the check and the Vote.
   const inserted = await db.query(
     `INSERT INTO votes (poll_id, option_id, voter_id)
-     SELECT poll_id, id, $3 FROM options WHERE poll_id = $1 AND id = $2
+     SELECT o.poll_id, o.id, $3
+       FROM options o JOIN polls p ON p.id = o.poll_id
+      WHERE o.poll_id = $1 AND o.id = $2
+        AND (p.deadline IS NULL OR p.deadline > $4)
      ON CONFLICT (poll_id, voter_id) DO NOTHING
      RETURNING poll_id`,
-    [pollId, optionId, voterId],
+    [pollId, optionId, voterId, now],
   );
   if (inserted.length > 0) return "ok";
 
-  const [why] = await db.query<{ poll_exists: boolean; option_in_poll: boolean }>(
-    `SELECT EXISTS (SELECT 1 FROM polls WHERE id = $1) AS poll_exists,
+  const [rejection] = await db.query<{
+    deadline: Date | null;
+    poll_exists: boolean;
+    option_in_poll: boolean;
+  }>(
+    `SELECT (SELECT deadline FROM polls WHERE id = $1) AS deadline,
+            EXISTS (SELECT 1 FROM polls WHERE id = $1) AS poll_exists,
             EXISTS (SELECT 1 FROM options WHERE poll_id = $1 AND id = $2) AS option_in_poll`,
     [pollId, optionId],
   );
-  if (!why.poll_exists) return "poll-not-found";
-  if (!why.option_in_poll) return "option-not-in-poll";
+  if (!rejection.poll_exists) return "poll-not-found";
+  if (isClosed(rejection.deadline, now)) return "poll-closed";
+  if (!rejection.option_in_poll) return "option-not-in-poll";
   return "already-voted";
 }
 

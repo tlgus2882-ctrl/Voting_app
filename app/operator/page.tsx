@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { formatKst } from "@/lib/kst";
 import { getDb } from "@/lib/neon-db";
+import { Badge } from "../badge";
 import { isOperator } from "@/lib/operator-session";
 import { listPolls } from "@/lib/polls";
 import { readViewer } from "@/lib/viewer";
@@ -40,11 +42,17 @@ export default async function OperatorPage() {
                 key={poll.id}
                 className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <div className="flex flex-col">
-                  <Link href={`/polls/${poll.id}`} className="font-medium hover:underline">
-                    {poll.question}
-                  </Link>
-                  <span className="text-sm text-zinc-500">{poll.totalVotes ?? 0}표</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Link href={`/polls/${poll.id}`} className="font-medium hover:underline">
+                      {poll.question}
+                    </Link>
+                    {poll.closed && <Badge>마감됨</Badge>}
+                  </div>
+                  <span className="text-sm text-zinc-500">
+                    {poll.totalVotes ?? 0}표
+                    {!poll.closed && poll.deadline && ` · ${formatKst(poll.deadline)} 마감`}
+                  </span>
                 </div>
                 <DeletePollButton pollId={poll.id} totalVotes={poll.totalVotes ?? 0} />
               </li>

@@ -45,6 +45,7 @@ export function CreatePollForm() {
 
 function PollFields() {
   const [question, setQuestion] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [nextKey, setNextKey] = useState(MIN_OPTIONS);
   const [options, setOptions] = useState<OptionField[]>(
     Array.from({ length: MIN_OPTIONS }, (_, key) => ({ key, text: "" })),
@@ -112,6 +113,20 @@ function PollFields() {
           </button>
         )}
       </fieldset>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="deadline" className="text-sm font-medium">
+          마감 시간 <span className="font-normal text-zinc-500">(선택, 한국 시간)</span>
+        </label>
+        <input
+          id="deadline"
+          name="deadline"
+          type="datetime-local"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          className={inputClass}
+        />
+        <p className="text-xs text-zinc-500">비워 두면 삭제할 때까지 계속 투표를 받습니다.</p>
+      </div>
     </>
   );
 }

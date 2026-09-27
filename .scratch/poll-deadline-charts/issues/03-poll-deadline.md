@@ -18,14 +18,14 @@ Spec: `.scratch/poll-deadline-charts/spec.md`
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 테스트: Deadline 없이 Poll을 올릴 수 있고, 항상 열려 있다
-- [ ] 테스트: now 이후 Deadline은 허용하고, now와 같거나 이전인 Deadline은 `deadline-not-in-future`로 거부한다
-- [ ] 테스트: Deadline 전에는 `closed=false`, 정각과 이후에는 `closed=true`다 (`getPoll`, `listPolls`)
-- [ ] 테스트: Deadline 1ms 전 Vote는 허용하고, 정각과 이후 Vote는 `poll-closed`로 거부하며 기록하지 않는다
-- [ ] 테스트: Vote하지 않은 Voter도 Closed Poll의 Result를 받고, 열린 Poll의 Result는 받지 않는다
-- [ ] Operator 폼에 Deadline 입력(선택)이 있고, 과거 시각이면 한국어 오류가 보인다
-- [ ] 수동 확인: "18:00"으로 올린 Poll이 한국 시간 18:00에 마감으로 표시된다 (서버 시간대와 무관)
-- [ ] Poll 페이지, 홈 목록, 관리 목록에 마감 정보와 "마감됨"이 spec대로 보인다
-- [ ] 마감 뒤에 열어 둔 폼으로 제출하면 Poll 페이지에 안내가 뜨고 Result가 보인다
+- [x] 테스트: Deadline 없이 Poll을 올릴 수 있고, 항상 열려 있다
+- [x] 테스트: now 이후 Deadline은 허용하고, now와 같거나 이전인 Deadline은 `deadline-not-in-future`로 거부한다
+- [x] 테스트: Deadline 전에는 `closed=false`, 정각과 이후에는 `closed=true`다 (`getPoll`, `listPolls`)
+- [x] 테스트: Deadline 1ms 전 Vote는 허용하고, 정각과 이후 Vote는 `poll-closed`로 거부하며 기록하지 않는다
+- [x] 테스트: Vote하지 않은 Voter도 Closed Poll의 Result를 받고, 열린 Poll의 Result는 받지 않는다
+- [x] Operator 폼에 Deadline 입력(선택)이 있고, 과거 시각이면 한국어 오류가 보인다
+- [x] 수동 확인: "18:00"으로 올린 Poll이 한국 시간 18:00에 마감으로 표시된다 (서버 시간대와 무관)
+- [x] Poll 페이지, 홈 목록, 관리 목록에 마감 정보와 "마감됨"이 spec대로 보인다
+- [x] 마감 뒤에 열어 둔 폼으로 제출하면 Poll 페이지에 안내가 뜨고 Result가 보인다

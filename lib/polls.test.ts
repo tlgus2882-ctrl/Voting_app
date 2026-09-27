@@ -239,3 +239,102 @@ describe("listPolls vote totals", () => {
     expect(forOperator.totalVotes).toBe(1);
   });
 });
+
+describe("Deadline", () => {
+  const later = (ms: number) => new Date(now.getTime() + ms);
+  const HOUR = 60 * 60 * 1000;
+
+  it("is optional: a Poll posted without one has none and is not Closed", async () => {
+    const pollId = await postPoll("Q?", ["a", "b"]);
+
+    expect(await getPoll(db, pollId, voter, later(1000 * HOUR))).toMatchObject({
+      deadline: null,
+      closed: false,
+    });
+  });
+
+  it("is returned with the Poll, which is not Closed before it", async () => {
+    const deadline = later(HOUR);
+    const result = await createPoll(db, { question: "Q?", options: ["a", "b"], deadline }, now);
+    if (!result.ok) throw new Error(result.error);
+
+    expect(await getPoll(db, result.pollId, voter, now)).toMatchObject({
+      deadline,
+      closed: false,
+    });
+  });
+
+  it("makes the Poll Closed exactly at the Deadline and after it", async () => {
+    const deadline = later(HOUR);
+    const result = await createPoll(db, { question: "Q?", options: ["a", "b"], deadline }, now);
+    if (!result.ok) throw new Error(result.error);
+
+    expect((await getPoll(db, result.pollId, voter, later(HOUR - 1)))?.closed).toBe(false);
+    expect((await getPoll(db, result.pollId, voter, deadline))?.closed).toBe(true);
+    expect((await getPoll(db, result.pollId, voter, later(2 * HOUR)))?.closed).toBe(true);
+  });
+
+  it("shows up as Closed in the Poll list", async () => {
+    const deadline = later(HOUR);
+    await createPoll(db, { question: "마감 있음", options: ["a", "b"], deadline }, now);
+    await postPoll("마감 없음", ["a", "b"]);
+
+    const polls = await listPolls(db, voter, later(2 * HOUR));
+
+    expect(polls.map((p) => [p.question, p.deadline, p.closed])).toEqual([
+      ["마감 없음", null, false],
+      ["마감 있음", deadline, true],
+    ]);
+  });
+
+  it.each([
+    ["equal to now", 0],
+    ["in the past", -HOUR],
+  ])("rejects a Deadline %s", async (_, offset) => {
+    const deadline = later(offset);
+
+    expect(
+      await createPoll(db, { question: "Q?", options: ["a", "b"], deadline }, now),
+    ).toEqual({ ok: false, error: "deadline-not-in-future" });
+    expect(await listPolls(db, voter, now)).toEqual([]);
+  });
+
+  async function postPollClosingIn(ms: number): Promise<{ pollId: number; optionId: number }> {
+    const result = await createPoll(
+      db,
+      { question: "Q?", options: ["짜장", "짬뽕"], deadline: later(ms) },
+      now,
+    );
+    if (!result.ok) throw new Error(result.error);
+    const [first] = (await getPoll(db, result.pollId, voter, now))!.options;
+    return { pollId: result.pollId, optionId: first.id };
+  }
+
+  it("accepts a Vote 1ms before the Deadline", async () => {
+    const { pollId, optionId } = await postPollClosingIn(HOUR);
+
+    expect(await castVote(db, { pollId, optionId, voterId: "voter-a" }, later(HOUR - 1))).toBe(
+      "ok",
+    );
+  });
+
+  it.each([
+    ["exactly at the Deadline", 0],
+    ["after the Deadline", 1],
+  ])("rejects a Vote %s without recording it", async (_, offset) => {
+    const { pollId, optionId } = await postPollClosingIn(HOUR);
+    const at = later(HOUR + offset);
+
+    expect(await castVote(db, { pollId, optionId, voterId: "voter-a" }, at)).toBe("poll-closed");
+    expect((await getPoll(db, pollId, voter, at))?.myOptionId).toBeNull();
+    expect((await getPoll(db, pollId, voter, at))?.result?.totalVotes).toBe(0);
+  });
+
+  it("shows a Closed Poll's Result to a Voter who never voted", async () => {
+    const { pollId, optionId } = await postPollClosingIn(HOUR);
+    await castVote(db, { pollId, optionId, voterId: "voter-b" }, now);
+
+    expect(await getPoll(db, pollId, voter, later(HOUR - 1))).not.toHaveProperty("result");
+    expect((await getPoll(db, pollId, voter, later(HOUR)))?.result?.totalVotes).toBe(1);
+  });
+});
