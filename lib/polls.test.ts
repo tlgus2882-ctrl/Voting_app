@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/lib/db";
-import { createPoll, listPolls } from "@/lib/polls";
+import { castVote, createPoll, getPoll, listPolls } from "@/lib/polls";
 import { createTestDb } from "@/test/pglite-db";
 
 const voter = { voterId: "voter-a", isOperator: false };
+
+async function postPoll(question: string, options: string[]): Promise<number> {
+  const result = await createPoll(db, question, options);
+  if (!result.ok) throw new Error(`could not post Poll: ${result.error}`);
+  return result.pollId;
+}
 
 let db: Db;
 beforeEach(async () => {
@@ -72,5 +78,62 @@ describe("createPoll validation", () => {
   it("trims the Question", async () => {
     await createPoll(db, "  점심 뭐 먹을까?  ", ["짜장", "짬뽕"]);
     expect((await listPolls(db, voter))[0].question).toBe("점심 뭐 먹을까?");
+  });
+});
+
+describe("getPoll", () => {
+  it("returns the Question and trimmed Options in the order they were entered", async () => {
+    const pollId = await postPoll("점심 뭐 먹을까?", [" 짬뽕 ", "짜장", "볶음밥"]);
+
+    const poll = await getPoll(db, pollId, voter);
+
+    expect(poll).toMatchObject({ id: pollId, question: "점심 뭐 먹을까?", myOptionId: null });
+    expect(poll?.options.map((o) => o.text)).toEqual(["짬뽕", "짜장", "볶음밥"]);
+  });
+
+  it("returns null for a Poll that does not exist", async () => {
+    expect(await getPoll(db, 999, voter)).toBeNull();
+  });
+});
+
+describe("castVote", () => {
+  it("records the Voter's Vote and marks the Poll as voted", async () => {
+    const pollId = await postPoll("점심 뭐 먹을까?", ["짜장", "짬뽕"]);
+    const jjamppong = (await getPoll(db, pollId, voter))!.options[1];
+
+    expect(await castVote(db, pollId, jjamppong.id, "voter-a")).toBe("ok");
+
+    expect((await getPoll(db, pollId, voter))?.myOptionId).toBe(jjamppong.id);
+    expect((await listPolls(db, voter))[0].hasVoted).toBe(true);
+  });
+
+  it("rejects a second Vote from the same Voter and keeps the first", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang, jjamppong] = (await getPoll(db, pollId, voter))!.options;
+    await castVote(db, pollId, jjajang.id, "voter-a");
+
+    expect(await castVote(db, pollId, jjamppong.id, "voter-a")).toBe("already-voted");
+    expect((await getPoll(db, pollId, voter))?.myOptionId).toBe(jjajang.id);
+  });
+
+  it("lets different Voters each Vote in the same Poll", async () => {
+    const pollId = await postPoll("Q?", ["짜장", "짬뽕"]);
+    const [jjajang] = (await getPoll(db, pollId, voter))!.options;
+
+    expect(await castVote(db, pollId, jjajang.id, "voter-a")).toBe("ok");
+    expect(await castVote(db, pollId, jjajang.id, "voter-b")).toBe("ok");
+  });
+
+  it("rejects an Option that belongs to another Poll", async () => {
+    const lunch = await postPoll("점심?", ["짜장", "짬뽕"]);
+    const dinner = await postPoll("저녁?", ["치킨", "피자"]);
+    const [chicken] = (await getPoll(db, dinner, voter))!.options;
+
+    expect(await castVote(db, lunch, chicken.id, "voter-a")).toBe("option-not-in-poll");
+    expect((await getPoll(db, lunch, voter))?.myOptionId).toBeNull();
+  });
+
+  it("rejects a Vote in a Poll that does not exist", async () => {
+    expect(await castVote(db, 999, 1, "voter-a")).toBe("poll-not-found");
   });
 });

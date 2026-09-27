@@ -93,3 +93,75 @@ export async function createPoll(
   );
   return { ok: true, pollId: rows[0].poll_id };
 }
+
+export type PollOption = { id: number; text: string };
+
+export type PollView = {
+  id: number;
+  question: string;
+  options: PollOption[];
+  /** The Option this Voter chose, or null if they haven't voted. */
+  myOptionId: number | null;
+};
+
+/** One Poll as seen by `viewer`, or null if it doesn't exist. */
+export async function getPoll(
+  db: Db,
+  pollId: number,
+  viewer: Viewer,
+): Promise<PollView | null> {
+  const [poll] = await db.query<{ id: number; question: string; my_option_id: number | null }>(
+    `SELECT p.id, p.question,
+            (SELECT v.option_id FROM votes v WHERE v.poll_id = p.id AND v.voter_id = $2) AS my_option_id
+       FROM polls p
+      WHERE p.id = $1`,
+    [pollId, viewer.voterId],
+  );
+  if (!poll) return null;
+
+  const options = await db.query<PollOption>(
+    `SELECT id, text FROM options WHERE poll_id = $1 ORDER BY position`,
+    [pollId],
+  );
+  return {
+    id: poll.id,
+    question: poll.question,
+    options,
+    myOptionId: poll.my_option_id,
+  };
+}
+
+export type CastVoteResult =
+  | "ok"
+  | "already-voted"
+  | "poll-not-found"
+  | "option-not-in-poll";
+
+/**
+ * Records one Voter's Vote for one Option. A Vote is final: a Voter's second
+ * Vote in the same Poll is rejected, not applied.
+ */
+export async function castVote(
+  db: Db,
+  pollId: number,
+  optionId: number,
+  voterId: string,
+): Promise<CastVoteResult> {
+  const inserted = await db.query(
+    `INSERT INTO votes (poll_id, option_id, voter_id)
+     SELECT poll_id, id, $3 FROM options WHERE poll_id = $1 AND id = $2
+     ON CONFLICT (poll_id, voter_id) DO NOTHING
+     RETURNING poll_id`,
+    [pollId, optionId, voterId],
+  );
+  if (inserted.length > 0) return "ok";
+
+  const [why] = await db.query<{ poll_exists: boolean; option_in_poll: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM polls WHERE id = $1) AS poll_exists,
+            EXISTS (SELECT 1 FROM options WHERE poll_id = $1 AND id = $2) AS option_in_poll`,
+    [pollId, optionId],
+  );
+  if (!why.poll_exists) return "poll-not-found";
+  if (!why.option_in_poll) return "option-not-in-poll";
+  return "already-voted";
+}
